@@ -3,7 +3,7 @@ name: default
 
 workspace:
   base: /go
-  path: src/github.com/makoto126/go-atari
+  path: src/github.com/makoto126/quota
 
 steps:
 - name: build
