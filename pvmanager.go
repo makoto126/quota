@@ -107,6 +107,7 @@ func (dm *dirManager) Withdraw() error {
 }
 
 func newPvManager(
+	pvCli typev1.PersistentVolumeInterface,
 	pvLister listerv1.PersistentVolumeLister,
 	baseDir string,
 	availableNum int,
@@ -125,6 +126,7 @@ func newPvManager(
 	}
 
 	return &pvManager{
+		pvCli:        pvCli,
 		pvLister:     pvLister,
 		listDuration: listDuration,
 		dirManager:   dirManager,

@@ -53,7 +53,14 @@ func main() {
 	log.Println("Start SharedInformerFactory...")
 	factory.Start(stopCh)
 
-	pvManager, err := newPvManager(pvLister, c.BaseDir, c.AvailableNum, c.ListDuration, c.Storage)
+	pvManager, err := newPvManager(
+		cli.CoreV1().PersistentVolumes(),
+		pvLister,
+		c.BaseDir,
+		c.AvailableNum,
+		c.ListDuration,
+		c.Storage,
+	)
 	if err != nil {
 		log.Fatalln(err)
 	}
