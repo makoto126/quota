@@ -24,13 +24,14 @@ const (
 
 type (
 	pvManager struct {
-		pvCli        typev1.PersistentVolumeInterface
-		pvLister     listerv1.PersistentVolumeLister
-		listDuration time.Duration
-		dirManager   *dirManager
-		availableNum int
-		storage      string
-		nodename     string
+		pvCli            typev1.PersistentVolumeInterface
+		pvLister         listerv1.PersistentVolumeLister
+		listDuration     time.Duration
+		dirManager       *dirManager
+		availableNum     int
+		storage          string
+		nodename         string
+		storageClassName string
 	}
 
 	dirManager struct {
@@ -114,6 +115,7 @@ func newPvManager(
 	availableNum int,
 	listDuration time.Duration,
 	storage string,
+	storageClassName string,
 ) (*pvManager, error) {
 
 	dirManager, err := newDirManager(baseDir)
@@ -122,13 +124,14 @@ func newPvManager(
 	}
 
 	return &pvManager{
-		pvCli:        pvCli,
-		pvLister:     pvLister,
-		listDuration: listDuration,
-		dirManager:   dirManager,
-		availableNum: availableNum,
-		storage:      storage,
-		nodename:     nodename,
+		pvCli:            pvCli,
+		pvLister:         pvLister,
+		listDuration:     listDuration,
+		dirManager:       dirManager,
+		availableNum:     availableNum,
+		storage:          storage,
+		nodename:         nodename,
+		storageClassName: storageClassName,
 	}, nil
 }
 
@@ -225,8 +228,8 @@ func (pm *pvManager) create(latest int) error {
 	volumeMode := corev1.PersistentVolumeFilesystem
 	pv.Spec.VolumeMode = &volumeMode
 	pv.Spec.AccessModes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
-	pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimDelete
-	pv.Spec.StorageClassName = "local-storage"
+	pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimRetain
+	pv.Spec.StorageClassName = pm.storageClassName
 	pv.Spec.Local = &corev1.LocalVolumeSource{
 		Path: path.Join(pm.dirManager.baseDir, latestStr),
 	}

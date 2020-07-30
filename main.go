@@ -10,18 +10,15 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const (
-	defaultResync = 30 * time.Second
-)
-
 // Config by env
 type Config struct {
-	NodeName      string        `required:"true"`
-	BaseDir       string        `default:"/data" split_words:"true"`
-	AvailableNum  int           `default:"1" split_words:"true"`
-	DefaultResync time.Duration `default:"30s" split_words:"true"`
-	ListDuration  time.Duration `default:"5s" split_words:"true"`
-	Storage       string        `default:"1000Gi" split_words:"true"`
+	NodeName         string        `required:"true" split_words:"true"`
+	BaseDir          string        `default:"/data" split_words:"true"`
+	AvailableNum     int           `default:"1" split_words:"true"`
+	DefaultResync    time.Duration `default:"30s" split_words:"true"`
+	ListDuration     time.Duration `default:"5s" split_words:"true"`
+	Storage          string        `default:"1000Gi" split_words:"true"`
+	StorageClassName string        `default:"local-storage" split_words:"true"`
 }
 
 func main() {
@@ -62,11 +59,12 @@ func main() {
 		c.AvailableNum,
 		c.ListDuration,
 		c.Storage,
+		c.StorageClassName,
 	)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	pvManager.Run()
+	go pvManager.Run()
 
 	<-stopCh
 }
