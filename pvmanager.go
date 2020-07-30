@@ -30,7 +30,7 @@ type (
 		dirManager   *dirManager
 		availableNum int
 		storage      string
-		hostname     string
+		nodename     string
 	}
 
 	dirManager struct {
@@ -107,6 +107,7 @@ func (dm *dirManager) Withdraw() error {
 }
 
 func newPvManager(
+	nodename string,
 	pvCli typev1.PersistentVolumeInterface,
 	pvLister listerv1.PersistentVolumeLister,
 	baseDir string,
@@ -114,11 +115,6 @@ func newPvManager(
 	listDuration time.Duration,
 	storage string,
 ) (*pvManager, error) {
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
 
 	dirManager, err := newDirManager(baseDir)
 	if err != nil {
@@ -132,13 +128,13 @@ func newPvManager(
 		dirManager:   dirManager,
 		availableNum: availableNum,
 		storage:      storage,
-		hostname:     hostname,
+		nodename:     nodename,
 	}, nil
 }
 
 func (pm *pvManager) Run() {
 
-	selector := labels.SelectorFromSet(labels.Set{labelKey: pm.hostname})
+	selector := labels.SelectorFromSet(labels.Set{labelKey: pm.nodename})
 
 	for range time.Tick(pm.listDuration) {
 
@@ -220,8 +216,8 @@ func (pm *pvManager) create(latest int) error {
 	latestStr := strconv.Itoa(latest)
 	pv := new(corev1.PersistentVolume)
 
-	pv.SetName(pm.hostname + "-" + latestStr)
-	pv.SetLabels(map[string]string{labelKey: pm.hostname})
+	pv.SetName(pm.nodename + "-" + latestStr)
+	pv.SetLabels(map[string]string{labelKey: pm.nodename})
 
 	pv.Spec.Capacity = corev1.ResourceList{
 		"storage": resource.MustParse(pm.storage),
@@ -242,7 +238,7 @@ func (pm *pvManager) create(latest int) error {
 						{
 							Key:      "kubernetes.io/hostname",
 							Operator: corev1.NodeSelectorOpIn,
-							Values:   []string{pm.hostname},
+							Values:   []string{pm.nodename},
 						},
 					},
 				},

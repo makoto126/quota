@@ -16,6 +16,7 @@ const (
 
 // Config by env
 type Config struct {
+	NodeName      string        `required:"true"`
 	BaseDir       string        `default:"/data" split_words:"true"`
 	AvailableNum  int           `default:"1" split_words:"true"`
 	DefaultResync time.Duration `default:"30s" split_words:"true"`
@@ -54,6 +55,7 @@ func main() {
 	factory.Start(stopCh)
 
 	pvManager, err := newPvManager(
+		c.NodeName,
 		cli.CoreV1().PersistentVolumes(),
 		pvLister,
 		c.BaseDir,
