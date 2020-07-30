@@ -96,6 +96,16 @@ func (dm *dirManager) AddDir() (int, error) {
 	return dm.latest, nil
 }
 
+func (dm *dirManager) Withdraw() error {
+
+	err := os.Remove(path.Join(dm.baseDir, strconv.Itoa(dm.latest)))
+	if err != nil {
+		return err
+	}
+	dm.latest--
+	return nil
+}
+
 func newPvManager(
 	pvLister listerv1.PersistentVolumeLister,
 	baseDir string,
@@ -174,6 +184,9 @@ func (pm *pvManager) Run() {
 			}
 			if err := pm.create(latest); err != nil {
 				log.Error(err)
+				if err := pm.dirManager.Withdraw(); err != nil {
+					log.Error(err)
+				}
 			}
 		}
 	}
@@ -211,7 +224,8 @@ func (pm *pvManager) create(latest int) error {
 	pv.Spec.Capacity = corev1.ResourceList{
 		"storage": resource.MustParse(pm.storage),
 	}
-	*pv.Spec.VolumeMode = corev1.PersistentVolumeFilesystem
+	volumeMode := corev1.PersistentVolumeFilesystem
+	pv.Spec.VolumeMode = &volumeMode
 	pv.Spec.AccessModes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimDelete
 	pv.Spec.StorageClassName = "local-storage"
