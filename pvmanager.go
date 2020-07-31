@@ -88,13 +88,17 @@ func (dm *dirManager) Clean(num string) error {
 
 func (dm *dirManager) AddDir() (int, error) {
 
-	err := os.Mkdir(path.Join(dm.baseDir, strconv.Itoa(dm.latest+1)), os.FileMode(0755))
+	target := path.Join(dm.baseDir, strconv.Itoa(dm.latest+1))
+	err := os.Mkdir(target, os.FileMode(0755))
 	if err != nil {
 		return -1, err
 	}
 
 	dm.latest++
-	return dm.latest, nil
+
+	err = setProjid(target, strconv.Itoa(dm.latest))
+
+	return dm.latest, err
 }
 
 func (dm *dirManager) Withdraw() error {
@@ -181,6 +185,8 @@ func (pm *pvManager) Run() {
 			latest, err := pm.dirManager.AddDir()
 			if err != nil {
 				log.Error(err)
+			}
+			if latest == -1 {
 				continue
 			}
 			if err := pm.create(latest); err != nil {

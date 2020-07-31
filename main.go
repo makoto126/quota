@@ -29,7 +29,9 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	// creates the in-cluster config
+	//BaseDir should be the mount point of xfs_quota command
+	mntPoint = c.BaseDir
+
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		log.Fatalln(err)
@@ -43,7 +45,11 @@ func main() {
 	pvcInformer := factory.Core().V1().PersistentVolumeClaims().Informer()
 	pvLister := factory.Core().V1().PersistentVolumes().Lister()
 
-	handler := newQuotaHandler()
+	handler := &quotaHandler{
+		corev1Cli: cli.CoreV1(),
+		pvLister:  pvLister,
+		nodename:  c.NodeName,
+	}
 	pvcInformer.AddEventHandler(handler)
 
 	stopCh := make(chan struct{})
