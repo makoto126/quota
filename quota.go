@@ -33,7 +33,7 @@ func (qh *quotaHandler) OnUpdate(oldObj, newObj interface{}) {
 
 	newPvc := newObj.(*corev1.PersistentVolumeClaim)
 
-	if *newPvc.Spec.StorageClassName != StorageClassName {
+	if newPvc.Spec.StorageClassName == nil || *newPvc.Spec.StorageClassName != StorageClassName {
 		return
 	}
 	if newPvc.Status.Phase != corev1.ClaimBound {
