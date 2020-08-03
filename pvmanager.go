@@ -24,14 +24,12 @@ const (
 
 type (
 	pvManager struct {
-		pvCli            typev1.PersistentVolumeInterface
-		pvLister         listerv1.PersistentVolumeLister
-		listDuration     time.Duration
-		dirManager       *dirManager
-		availableNum     int
-		storage          string
-		nodename         string
-		storageClassName string
+		pvCli           typev1.PersistentVolumeInterface
+		pvLister        listerv1.PersistentVolumeLister
+		listDuration    time.Duration
+		dirManager      *dirManager
+		availableNum    int
+		storageCapacity string
 	}
 
 	dirManager struct {
@@ -112,14 +110,12 @@ func (dm *dirManager) Withdraw() error {
 }
 
 func newPvManager(
-	nodename string,
 	pvCli typev1.PersistentVolumeInterface,
 	pvLister listerv1.PersistentVolumeLister,
 	baseDir string,
 	availableNum int,
 	listDuration time.Duration,
-	storage string,
-	storageClassName string,
+	storageCapacity string,
 ) (*pvManager, error) {
 
 	dirManager, err := newDirManager(baseDir)
@@ -128,20 +124,18 @@ func newPvManager(
 	}
 
 	return &pvManager{
-		pvCli:            pvCli,
-		pvLister:         pvLister,
-		listDuration:     listDuration,
-		dirManager:       dirManager,
-		availableNum:     availableNum,
-		storage:          storage,
-		nodename:         nodename,
-		storageClassName: storageClassName,
+		pvCli:           pvCli,
+		pvLister:        pvLister,
+		listDuration:    listDuration,
+		dirManager:      dirManager,
+		availableNum:    availableNum,
+		storageCapacity: storageCapacity,
 	}, nil
 }
 
 func (pm *pvManager) Run() {
 
-	selector := labels.SelectorFromSet(labels.Set{labelKey: pm.nodename})
+	selector := labels.SelectorFromSet(labels.Set{labelKey: NodeName})
 
 	for range time.Tick(pm.listDuration) {
 
@@ -225,17 +219,17 @@ func (pm *pvManager) create(latest int) error {
 	latestStr := strconv.Itoa(latest)
 	pv := new(corev1.PersistentVolume)
 
-	pv.SetName(pm.nodename + "-" + latestStr)
-	pv.SetLabels(map[string]string{labelKey: pm.nodename})
+	pv.SetName(NodeName + "-" + latestStr)
+	pv.SetLabels(map[string]string{labelKey: NodeName})
 
 	pv.Spec.Capacity = corev1.ResourceList{
-		"storage": resource.MustParse(pm.storage),
+		"storage": resource.MustParse(pm.storageCapacity),
 	}
 	volumeMode := corev1.PersistentVolumeFilesystem
 	pv.Spec.VolumeMode = &volumeMode
 	pv.Spec.AccessModes = []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}
 	pv.Spec.PersistentVolumeReclaimPolicy = corev1.PersistentVolumeReclaimRetain
-	pv.Spec.StorageClassName = pm.storageClassName
+	pv.Spec.StorageClassName = StorageClassName
 	pv.Spec.Local = &corev1.LocalVolumeSource{
 		Path: path.Join(pm.dirManager.baseDir, latestStr),
 	}
@@ -247,7 +241,7 @@ func (pm *pvManager) create(latest int) error {
 						{
 							Key:      "kubernetes.io/hostname",
 							Operator: corev1.NodeSelectorOpIn,
-							Values:   []string{pm.nodename},
+							Values:   []string{NodeName},
 						},
 					},
 				},

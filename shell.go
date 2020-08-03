@@ -7,7 +7,8 @@ import (
 	"os/exec"
 )
 
-var mntPoint string
+//MntPoint is the data disk mount point
+var MntPoint string
 
 func setProjid(target string, prjid string) error {
 
@@ -23,7 +24,7 @@ func setQuota(quota string, prjid string) error {
 
 func xfsQuota(sub string) error {
 
-	cmd := exec.Command("xfs_quota", "-x", "-c", sub, mntPoint)
+	cmd := exec.Command("xfs_quota", "-x", "-c", sub, MntPoint)
 	stderr := new(bytes.Buffer)
 	cmd.Stderr = stderr
 

@@ -19,7 +19,6 @@ const (
 type quotaHandler struct {
 	corev1Cli typev1.CoreV1Interface
 	pvLister  listerv1.PersistentVolumeLister
-	nodename  string
 }
 
 func (qh *quotaHandler) OnAdd(obj interface{}) {
@@ -33,10 +32,14 @@ func (qh *quotaHandler) OnDelete(obj interface{}) {
 func (qh *quotaHandler) OnUpdate(oldObj, newObj interface{}) {
 
 	newPvc := newObj.(*corev1.PersistentVolumeClaim)
+
+	if *newPvc.Spec.StorageClassName != StorageClassName {
+		return
+	}
 	if newPvc.Status.Phase != corev1.ClaimBound {
 		return
 	}
-	if !strings.HasPrefix(newPvc.Spec.VolumeName, qh.nodename) {
+	if !strings.HasPrefix(newPvc.Spec.VolumeName, NodeName) {
 		return
 	}
 

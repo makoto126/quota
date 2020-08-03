@@ -10,6 +10,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	// NodeName is the hostname
+	NodeName string
+	// StorageClassName to manage
+	StorageClassName string
+)
+
 // Config by env
 type Config struct {
 	NodeName         string        `required:"true" split_words:"true"`
@@ -17,7 +24,7 @@ type Config struct {
 	AvailableNum     int           `default:"1" split_words:"true"`
 	DefaultResync    time.Duration `default:"30s" split_words:"true"`
 	ListDuration     time.Duration `default:"5s" split_words:"true"`
-	Storage          string        `default:"1000Gi" split_words:"true"`
+	StorageCapacity  string        `default:"1000Gi" split_words:"true"`
 	StorageClassName string        `default:"local-storage" split_words:"true"`
 }
 
@@ -29,8 +36,11 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	NodeName = c.NodeName
+	StorageClassName = c.StorageClassName
+
 	//BaseDir should be the mount point of xfs_quota command
-	mntPoint = c.BaseDir
+	MntPoint = c.BaseDir
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -48,7 +58,6 @@ func main() {
 	handler := &quotaHandler{
 		corev1Cli: cli.CoreV1(),
 		pvLister:  pvLister,
-		nodename:  c.NodeName,
 	}
 	pvcInformer.AddEventHandler(handler)
 
@@ -58,14 +67,12 @@ func main() {
 	factory.Start(stopCh)
 
 	pvManager, err := newPvManager(
-		c.NodeName,
 		cli.CoreV1().PersistentVolumes(),
 		pvLister,
 		c.BaseDir,
 		c.AvailableNum,
 		c.ListDuration,
-		c.Storage,
-		c.StorageClassName,
+		c.StorageCapacity,
 	)
 	if err != nil {
 		log.Fatalln(err)
