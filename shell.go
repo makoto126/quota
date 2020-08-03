@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 )
@@ -22,5 +24,15 @@ func setQuota(quota string, prjid string) error {
 func xfsQuota(sub string) error {
 
 	cmd := exec.Command("xfs_quota", "-x", "-c", sub, mntPoint)
-	return cmd.Run()
+	stderr := new(bytes.Buffer)
+	cmd.Stderr = stderr
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	if s := stderr.String(); s != "" {
+		return errors.New(s)
+	}
+	return nil
+
 }
