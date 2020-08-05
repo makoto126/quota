@@ -1,0 +1,78 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: quota
+  namespace: kube-system
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pv-and-pvc-manager
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes", "persistentvolumeclaims"]
+    verbs: ["*"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: quota-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pv-and-pvc-manager
+subjects:
+  - kind: ServiceAccount
+    name: quota
+    namespace: kube-system
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: kube-system
+  name: quota
+spec:
+  selector:
+    matchLabels:
+      app: quota
+  template:
+    metadata:
+      labels:
+        app: quota
+    spec:
+      containers:
+      - name: quota
+        image: makoto126/quota
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: data
+          # must be the same as the volume path
+          mountPath: /data
+      volumes:
+        - name: data
+          hostPath:
+            # your data disk mount point
+            path: /data
+      serviceAccountName: quota
+

@@ -11,10 +11,14 @@ import (
 )
 
 var (
-	// NodeName is the hostname
+	//NodeName is the hostname of Host（not Docker）
 	NodeName string
-	// StorageClassName to manage
+	//BaseDir is the mount point of data disk
+	BaseDir string
+	//StorageClassName of PV and PVC
 	StorageClassName string
+	//DefaultResync is the default resync duration of imformer
+	DefaultResync time.Duration
 )
 
 // Config by env
@@ -24,23 +28,26 @@ type Config struct {
 	AvailableNum     int           `default:"1" split_words:"true"`
 	DefaultResync    time.Duration `default:"30s" split_words:"true"`
 	ListDuration     time.Duration `default:"5s" split_words:"true"`
-	StorageCapacity  string        `default:"1000Gi" split_words:"true"`
 	StorageClassName string        `default:"local-storage" split_words:"true"`
+	StorageCapacity  string        `split_words:"true"`
+	RecordDuration   time.Duration `default:"30s" split_words:"true"`
 }
 
 func main() {
 
-	var c Config
-	err := envconfig.Process("", &c)
+	var c *Config
+	err := envconfig.Process("", c)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	NodeName = c.NodeName
+	BaseDir = c.BaseDir
 	StorageClassName = c.StorageClassName
-
-	//BaseDir should be the mount point of xfs_quota command
-	MntPoint = c.BaseDir
+	DefaultResync = c.DefaultResync
+	ListDuration = c.ListDuration
+	AvailableNum = c.AvailableNum
+	StorageCapacity = c.StorageCapacity
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -51,7 +58,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	factory := informers.NewSharedInformerFactory(cli, c.DefaultResync)
+	factory := informers.NewSharedInformerFactory(cli, DefaultResync)
 	pvcInformer := factory.Core().V1().PersistentVolumeClaims().Informer()
 	pvLister := factory.Core().V1().PersistentVolumes().Lister()
 
@@ -69,15 +76,12 @@ func main() {
 	pvManager, err := newPvManager(
 		cli.CoreV1().PersistentVolumes(),
 		pvLister,
-		c.BaseDir,
-		c.AvailableNum,
-		c.ListDuration,
-		c.StorageCapacity,
 	)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	go pvManager.Run()
+	go ServeMetrics()
 
 	<-stopCh
 }

@@ -1,0 +1,40 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-local-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: local-storage
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox
+spec:
+  selector:
+    matchLabels:
+      app: busybox
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["dd", "if=/dev/zero", "of=/data/test"]
+        volumeMounts:
+          - mountPath: "/data"
+            name: data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: test-local-pvc
+
