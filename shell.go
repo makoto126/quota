@@ -49,6 +49,10 @@ func getReport() ([]*report, error) {
 			lf := strings.Fields(line)
 
 			projid := lf[0]
+			if projid == "#0" {
+				continue
+			}
+
 			used, err := strconv.ParseUint(lf[1], 10, 64)
 			if err != nil {
 				return nil, err

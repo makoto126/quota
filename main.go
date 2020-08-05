@@ -48,6 +48,7 @@ func main() {
 	ListDuration = c.ListDuration
 	AvailableNum = c.AvailableNum
 	StorageCapacity = c.StorageCapacity
+	RecordDuration = c.RecordDuration
 
 	config, err := rest.InClusterConfig()
 	if err != nil {

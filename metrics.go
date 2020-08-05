@@ -50,6 +50,7 @@ func recordMetrics() {
 func ServeMetrics() {
 	recordMetrics()
 
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.GET("metrics", gin.WrapH(promhttp.Handler()))
 	r.Run()
