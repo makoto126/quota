@@ -1,7 +1,7 @@
 # quota
 
 ## Design
-![design](https://imgchr.com/i/acJMAH)
+![acJMAH.png](https://s1.ax1x.com/2020/08/06/acJMAH.png)
 ## Deploy
 Execute on each k8s node:
 ```
