@@ -1,5 +1,7 @@
 # quota
 
+## Design
+![design](https://imgchr.com/i/acJMAH)
 ## Deploy
 Execute on each k8s node:
 ```
@@ -21,3 +23,27 @@ Test resize:
 kubectl patch pvc test-local-pvc --patch \
 '{"metadata": {"annotations": {"quota": "500Mi"}}'
 ```
+Test metrics:
+```
+curl [pod ip]:8080/metrics
+```
+
+## Configuration
+Configurable items:
+```go
+type Config struct {
+	NodeName         string        `required:"true" split_words:"true"`
+	BaseDir          string        `default:"/data" split_words:"true"`
+	AvailableNum     int           `default:"1" split_words:"true"`
+	DefaultResync    time.Duration `default:"30s" split_words:"true"`
+	ListDuration     time.Duration `default:"5s" split_words:"true"`
+    StorageClassName string        `default:"local-storage" split_words:"true"`
+	StorageCapacity  string        `split_words:"true"`
+	RecordDuration   time.Duration `default:"30s" split_words:"true"`
+}
+```
+Using environment variables, for example:
+- AVAILABLE_NUM = 2
+- LIST_DURATION = 15s
+
+
