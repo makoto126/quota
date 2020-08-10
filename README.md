@@ -21,7 +21,7 @@ kubectl apply -f test/test.yaml
 Test resize:
 ```
 kubectl patch pvc test-local-pvc --patch \
-'{"metadata": {"annotations": {"quota": "500Mi"}}'
+'{"metadata": {"annotations": {"quota": "500Mi"}}}'
 ```
 Test metrics:
 ```
@@ -45,5 +45,41 @@ type Config struct {
 Using environment variables, for example:
 - AVAILABLE_NUM = 2
 - LIST_DURATION = 15s
+
+## Metrics
+```go
+	persistentVolumeUsedKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "persistentvolume_used_kbytes",
+	}, []string{"node", "id"})
+
+	persistentVolumeQuotaKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "persistentvolume_quota_kbytes",
+	}, []string{"node", "id"})
+
+	dataDiskReadCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "data_disk_read_count",
+	}, []string{"node", "name"})
+
+	dataDiskWriteCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "data_disk_write_count",
+	}, []string{"node", "name"})
+
+	dataDiskReadBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "data_disk_read_bytes",
+	}, []string{"node", "name"})
+
+	dataDiskWriteBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "data_disk_write_bytes",
+	}, []string{"node", "name"})
+
+	dataDiskReadTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "data_disk_read_time",
+	}, []string{"node", "name"})
+
+	dataDiskWriteTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "data_disk_write_time",
+	}, []string{"node", "name"})
+```
+
 
 
