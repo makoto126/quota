@@ -35,6 +35,10 @@ type Config struct {
 
 func main() {
 
+	//add the file, line and calling function info to log
+	log.SetReportCaller(true)
+
+	//parse config form environment variables
 	var c Config
 	err := envconfig.Process("", &c)
 	if err != nil {
@@ -50,10 +54,12 @@ func main() {
 	StorageCapacity = c.StorageCapacity
 	RecordDuration = c.RecordDuration
 
+	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		log.Fatalln(err)
 	}
+	// creates the clientset from in-cluster config
 	cli, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatalln(err)
@@ -62,10 +68,10 @@ func main() {
 	factory := informers.NewSharedInformerFactory(cli, DefaultResync)
 	pvcInformer := factory.Core().V1().PersistentVolumeClaims().Informer()
 	pvLister := factory.Core().V1().PersistentVolumes().Lister()
+	pvcLister := factory.Core().V1().PersistentVolumeClaims().Lister()
 
 	handler := &quotaHandler{
 		corev1Cli: cli.CoreV1(),
-		pvLister:  pvLister,
 	}
 	pvcInformer.AddEventHandler(handler)
 
@@ -77,11 +83,13 @@ func main() {
 	pvManager, err := newPvManager(
 		cli.CoreV1().PersistentVolumes(),
 		pvLister,
+		pvcLister,
 	)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	go pvManager.Run()
+	//run the prometheus
 	go ServeMetrics()
 
 	<-stopCh

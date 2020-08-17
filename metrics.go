@@ -17,6 +17,7 @@ var (
 	RecordDuration time.Duration
 )
 
+//prometheus metrics
 var (
 	persistentVolumeUsedKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "persistentvolume_used_kbytes",

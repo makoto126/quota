@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/shirou/gopsutil/disk"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -19,7 +22,7 @@ import (
 )
 
 const (
-	labelKey = "node"
+	labelKey = "quotad-node"
 )
 
 var (
@@ -31,10 +34,26 @@ var (
 	StorageCapacity string
 )
 
+//prometheus metrics
+var (
+	persistentVolumeCreateFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "persistentvolume_create_failed_total",
+	}, []string{"node"})
+
+	persistentVolumeCleanFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "persistentvolume_clean_failed_total",
+	}, []string{"node"})
+
+	persistentVolumeQuotaNotMatchTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "persistentvolume_quota_not_match_total",
+	}, []string{"node", "detail"})
+)
+
 type (
 	pvManager struct {
 		pvCli      typev1.PersistentVolumeInterface
 		pvLister   listerv1.PersistentVolumeLister
+		pvcLister  listerv1.PersistentVolumeClaimLister
 		dirManager *dirManager
 	}
 
@@ -116,6 +135,7 @@ func (dm *dirManager) Withdraw() error {
 func newPvManager(
 	pvCli typev1.PersistentVolumeInterface,
 	pvLister listerv1.PersistentVolumeLister,
+	pvcLister listerv1.PersistentVolumeClaimLister,
 ) (*pvManager, error) {
 
 	dirManager, err := newDirManager()
@@ -134,6 +154,7 @@ func newPvManager(
 	return &pvManager{
 		pvCli:      pvCli,
 		pvLister:   pvLister,
+		pvcLister:  pvcLister,
 		dirManager: dirManager,
 	}, nil
 }
@@ -157,6 +178,7 @@ func (pm *pvManager) Run() {
 				_, num := path.Split(pv.Spec.Local.Path)
 				if err := pm.dirManager.Clean(num); err != nil {
 					log.Errorln(err)
+					persistentVolumeCleanFailedTotal.WithLabelValues(NodeName).Inc()
 					continue
 				}
 
@@ -166,11 +188,20 @@ func (pm *pvManager) Run() {
 				}
 
 				available++
+
 			case corev1.VolumeAvailable:
 				available++
+
+			case corev1.VolumeBound:
+				if err := pm.check(pv); err != nil {
+					log.Errorln(err)
+				}
+
 			case corev1.VolumeFailed:
 				log.Warnln(pv.Name, corev1.VolumeFailed)
+
 			default:
+				//just ingore the VolumePending phase
 			}
 		}
 
@@ -185,17 +216,73 @@ func (pm *pvManager) Run() {
 			if err != nil {
 				log.Error(err)
 			}
+			//-1 means failed to create folder
 			if latest == -1 {
 				continue
 			}
+			//the folder was created successfully, but failed to set the quota projid
 			if err := pm.create(latest); err != nil {
 				log.Error(err)
+				persistentVolumeCreateFailedTotal.WithLabelValues(NodeName).Inc()
 				if err := pm.dirManager.Withdraw(); err != nil {
 					log.Error(err)
 				}
 			}
 		}
 	}
+}
+
+func (pm *pvManager) check(pv *corev1.PersistentVolume) error {
+
+	pvcName := pv.Spec.ClaimRef.Name
+	pvcNamespace := pv.Spec.ClaimRef.Namespace
+
+	pvc, err := pm.pvcLister.PersistentVolumeClaims(pvcNamespace).Get(pvcName)
+	if err != nil {
+		return err
+	}
+
+	if pvc.Annotations[annoKey] == "" {
+		return nil
+	}
+
+	expected := convertStorageUnit(pvc.Annotations[annoKey])
+	eq, err := resource.ParseQuantity(expected)
+	if err != nil {
+		return err
+	}
+
+	projid := getProjidFromVolumeName(pv.Name)
+	used, actual, err := getUsedQuota(projid)
+	if err != nil {
+		return err
+	}
+	aq, err := resource.ParseQuantity(actual)
+
+	switch eq.Cmp(aq) {
+	case 1:
+		persistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, "low").Inc()
+		if err := setQuota(expected, projid); err != nil {
+			return err
+		}
+
+	case -1:
+		persistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, "high").Inc()
+		uq, err := resource.ParseQuantity(used)
+		if err != nil {
+			return err
+		}
+		if eq.Cmp(uq) == -1 {
+			//should alert
+			return fmt.Errorf("pv %s quota is lower than used", pv.Name)
+		}
+		if err := setQuota(expected, projid); err != nil {
+			return err
+		}
+	default:
+	}
+
+	return nil
 }
 
 func (pm *pvManager) reuse(pv *corev1.PersistentVolume) error {

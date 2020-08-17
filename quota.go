@@ -2,14 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"path"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	typev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	listerv1 "k8s.io/client-go/listers/core/v1"
 )
 
 const (
@@ -18,7 +17,6 @@ const (
 
 type quotaHandler struct {
 	corev1Cli typev1.CoreV1Interface
-	pvLister  listerv1.PersistentVolumeLister
 }
 
 func (qh *quotaHandler) OnAdd(obj interface{}) {
@@ -75,29 +73,28 @@ func (qh *quotaHandler) OnUpdate(oldObj, newObj interface{}) {
 	quotaChanged := oldPvc.Annotations[annoKey] != newPvc.Annotations[annoKey]
 	if volumeChanged || quotaChanged {
 
-		pv, err := qh.pvLister.Get(newPvc.Spec.VolumeName)
+		expected := convertStorageUnit(newPvc.Annotations[annoKey])
+		eq, err := resource.ParseQuantity(expected)
 		if err != nil {
 			log.Errorln(err)
 			return
 		}
-		_, projid := path.Split(pv.Spec.Local.Path)
 
-		quota := converter(newPvc.Annotations[annoKey])
+		projid := getProjidFromVolumeName(newPvc.Spec.VolumeName)
+		used, _, err := getUsedQuota(projid)
+		if err != nil {
+			log.Errorln(err)
+			return
+		}
+		uq, err := resource.ParseQuantity(used)
 
-		if err := setQuota(quota, projid); err != nil {
+		if eq.Cmp(uq) == -1 {
+			//should alert
+			log.Errorf("pvc %s quota is lower than used", newPvc.Name)
+		}
+
+		if err := setQuota(expected, projid); err != nil {
 			log.Errorln(err)
 		}
 	}
-}
-
-func converter(val string) string {
-	units := []string{"Mi", "Gi", "Ti"}
-
-	for _, u := range units {
-		if strings.HasSuffix(val, u) {
-			return val[:len(val)-1]
-		}
-	}
-
-	return val
 }

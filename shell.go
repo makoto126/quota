@@ -10,16 +10,41 @@ import (
 	"strings"
 )
 
-func setProjid(target string, prjid string) error {
+func setProjid(target string, projid string) error {
 
-	sub := fmt.Sprintf("project -s -p %s %s", target, prjid)
+	sub := fmt.Sprintf("project -s -p %s %s", target, projid)
 	return xfsQuota(sub, nil)
 }
 
-func setQuota(quota string, prjid string) error {
+func setQuota(quota string, projid string) error {
 
-	sub := fmt.Sprintf("limit -p bhard=%s %s", quota, prjid)
+	sub := fmt.Sprintf("limit -p bhard=%s %s", quota, projid)
 	return xfsQuota(sub, nil)
+}
+
+func getUsedQuota(projid string) (string, string, error) {
+
+	sub := "report -h"
+	stdout := new(bytes.Buffer)
+	if err := xfsQuota(sub, stdout); err != nil {
+		return "", "", err
+	}
+
+	var line string
+	var err error
+	for {
+		line, err = stdout.ReadString('\n')
+		if err != nil {
+			break
+		}
+		prefix := "#" + projid
+		if strings.HasPrefix(line, prefix) {
+			lf := strings.Fields(line)
+			return lf[1], lf[3], nil
+		}
+	}
+
+	return "", "", fmt.Errorf("projid %s not found", projid)
 }
 
 type report struct {
@@ -48,8 +73,9 @@ func getReport() ([]*report, error) {
 		if strings.HasPrefix(line, "#") {
 			lf := strings.Fields(line)
 
-			projid := lf[0]
-			if projid == "#0" {
+			//remove #
+			projid := lf[0][1:]
+			if projid == "0" {
 				continue
 			}
 
