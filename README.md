@@ -48,6 +48,7 @@ Using environment variables, for example:
 
 ## Metrics
 ```go
+	//metrics for persistentvolume
 	persistentVolumeUsedKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "persistentvolume_used_kbytes",
 	}, []string{"node", "id"})
@@ -56,6 +57,8 @@ Using environment variables, for example:
 		Name: "persistentvolume_quota_kbytes",
 	}, []string{"node", "id"})
 
+
+	//metrics for data disk
 	dataDiskReadCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "data_disk_read_count",
 	}, []string{"node", "name"})
@@ -79,6 +82,19 @@ Using environment variables, for example:
 	dataDiskWriteTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "data_disk_write_time",
 	}, []string{"node", "name"})
+
+	//metrics for error
+	persistentVolumeCreateFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "persistentvolume_create_failed_total",
+	}, []string{"node"})
+
+	persistentVolumeCleanFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "persistentvolume_clean_failed_total",
+	}, []string{"node"})
+
+	persistentVolumeQuotaNotMatchTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "persistentvolume_quota_not_match_total",
+	}, []string{"node", "detail"})
 ```
 
 
