@@ -57,7 +57,6 @@ Using environment variables, for example:
 		Name: "persistentvolume_quota_kbytes",
 	}, []string{"node", "id"})
 
-
 	//metrics for data disk
 	dataDiskReadCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "data_disk_read_count",

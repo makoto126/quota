@@ -91,6 +91,7 @@ func (qh *quotaHandler) OnUpdate(oldObj, newObj interface{}) {
 		if eq.Cmp(uq) == -1 {
 			//should alert
 			log.Errorf("pvc %s quota is lower than used", newPvc.Name)
+			return
 		}
 
 		if err := setQuota(expected, projid); err != nil {

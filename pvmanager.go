@@ -46,7 +46,7 @@ var (
 
 	persistentVolumeQuotaNotMatchTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "persistentvolume_quota_not_match_total",
-	}, []string{"node", "detail"})
+	}, []string{"node", "id", "detail"})
 )
 
 type (
@@ -261,13 +261,13 @@ func (pm *pvManager) check(pv *corev1.PersistentVolume) error {
 
 	switch eq.Cmp(aq) {
 	case 1:
-		persistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, "low").Inc()
+		persistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, projid, "low").Inc()
 		if err := setQuota(expected, projid); err != nil {
 			return err
 		}
 
 	case -1:
-		persistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, "high").Inc()
+		persistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, projid, "high").Inc()
 		uq, err := resource.ParseQuantity(used)
 		if err != nil {
 			return err
