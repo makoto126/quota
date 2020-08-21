@@ -19,36 +19,36 @@ var (
 
 //prometheus metrics
 var (
-	persistentVolumeUsedKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "persistentvolume_used_kbytes",
+	QuotadPersistentVolumeUsedKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_persistentvolume_used_kbytes",
 	}, []string{"node", "id"})
 
-	persistentVolumeQuotaKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "persistentvolume_quota_kbytes",
+	QuotadPersistentVolumeQuotaKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_persistentvolume_quota_kbytes",
 	}, []string{"node", "id"})
 
-	dataDiskReadCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_read_count",
+	QuotadDataDiskReadCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_read_count",
 	}, []string{"node", "name"})
 
-	dataDiskWriteCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_write_count",
+	QuotadDataDiskWriteCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_write_count",
 	}, []string{"node", "name"})
 
-	dataDiskReadBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_read_bytes",
+	QuotadDataDiskReadBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_read_bytes",
 	}, []string{"node", "name"})
 
-	dataDiskWriteBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_write_bytes",
+	QuotadDataDiskWriteBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_write_bytes",
 	}, []string{"node", "name"})
 
-	dataDiskReadTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_read_time",
+	QuotadDataDiskReadTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_read_time",
 	}, []string{"node", "name"})
 
-	dataDiskWriteTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_write_time",
+	QuotadDataDiskWriteTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_write_time",
 	}, []string{"node", "name"})
 )
 
@@ -74,11 +74,11 @@ func recordMetrics() {
 				log.Errorln(err)
 			}
 			for _, report := range reports {
-				persistentVolumeUsedKBytes.
+				QuotadPersistentVolumeUsedKBytes.
 					WithLabelValues(NodeName, report.Projid).
 					Set(float64(report.Used))
 
-				persistentVolumeQuotaKBytes.
+				QuotadPersistentVolumeQuotaKBytes.
 					WithLabelValues(NodeName, report.Projid).
 					Set(float64(report.Quota))
 			}
@@ -88,22 +88,22 @@ func recordMetrics() {
 				log.Errorln(err)
 			}
 			stat := ioCounters[diskName]
-			dataDiskReadCount.
+			QuotadDataDiskReadCount.
 				WithLabelValues(NodeName, diskName).
 				Set(float64(stat.ReadCount))
-			dataDiskWriteCount.
+			QuotadDataDiskWriteCount.
 				WithLabelValues(NodeName, diskName).
 				Set(float64(stat.WriteCount))
-			dataDiskReadBytes.
+			QuotadDataDiskReadBytes.
 				WithLabelValues(NodeName, diskName).
 				Set(float64(stat.ReadBytes))
-			dataDiskWriteBytes.
+			QuotadDataDiskWriteBytes.
 				WithLabelValues(NodeName, diskName).
 				Set(float64(stat.WriteBytes))
-			dataDiskReadTime.
+			QuotadDataDiskReadTime.
 				WithLabelValues(NodeName, diskName).
 				Set(float64(stat.ReadTime))
-			dataDiskWriteTime.
+			QuotadDataDiskWriteTime.
 				WithLabelValues(NodeName, diskName).
 				Set(float64(stat.WriteTime))
 		}

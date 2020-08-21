@@ -36,16 +36,16 @@ var (
 
 //prometheus metrics
 var (
-	persistentVolumeCreateFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "persistentvolume_create_failed_total",
+	QuotadPersistentVolumeCreateFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "quotad_persistentvolume_create_failed_total",
 	}, []string{"node"})
 
-	persistentVolumeCleanFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "persistentvolume_clean_failed_total",
+	QuotadPersistentVolumeCleanFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "quotad_persistentvolume_clean_failed_total",
 	}, []string{"node"})
 
-	persistentVolumeQuotaNotMatchTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "persistentvolume_quota_not_match_total",
+	QuotadPersistentVolumeQuotaNotMatchTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "quotad_persistentvolume_quota_not_match_total",
 	}, []string{"node", "id", "detail"})
 )
 
@@ -178,7 +178,7 @@ func (pm *pvManager) Run() {
 				_, num := path.Split(pv.Spec.Local.Path)
 				if err := pm.dirManager.Clean(num); err != nil {
 					log.Errorln(err)
-					persistentVolumeCleanFailedTotal.WithLabelValues(NodeName).Inc()
+					QuotadPersistentVolumeCleanFailedTotal.WithLabelValues(NodeName).Inc()
 					continue
 				}
 
@@ -223,7 +223,7 @@ func (pm *pvManager) Run() {
 			//the folder was created successfully, but failed to set the quota projid
 			if err := pm.create(latest); err != nil {
 				log.Error(err)
-				persistentVolumeCreateFailedTotal.WithLabelValues(NodeName).Inc()
+				QuotadPersistentVolumeCreateFailedTotal.WithLabelValues(NodeName).Inc()
 				if err := pm.dirManager.Withdraw(); err != nil {
 					log.Error(err)
 				}
@@ -261,13 +261,13 @@ func (pm *pvManager) check(pv *corev1.PersistentVolume) error {
 
 	switch eq.Cmp(aq) {
 	case 1:
-		persistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, projid, "low").Inc()
+		QuotadPersistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, projid, "low").Inc()
 		if err := setQuota(expected, projid); err != nil {
 			return err
 		}
 
 	case -1:
-		persistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, projid, "high").Inc()
+		QuotadPersistentVolumeQuotaNotMatchTotal.WithLabelValues(NodeName, projid, "high").Inc()
 		uq, err := resource.ParseQuantity(used)
 		if err != nil {
 			return err

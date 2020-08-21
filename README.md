@@ -49,51 +49,51 @@ Using environment variables, for example:
 ## Metrics
 ```go
 	//metrics for persistentvolume
-	persistentVolumeUsedKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "persistentvolume_used_kbytes",
+	QuotadPersistentVolumeUsedKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_persistentvolume_used_kbytes",
 	}, []string{"node", "id"})
 
-	persistentVolumeQuotaKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "persistentvolume_quota_kbytes",
+	QuotadPersistentVolumeQuotaKBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_persistentvolume_quota_kbytes",
 	}, []string{"node", "id"})
 
 	//metrics for data disk
-	dataDiskReadCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_read_count",
+	QuotadDataDiskReadCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_read_count",
 	}, []string{"node", "name"})
 
-	dataDiskWriteCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_write_count",
+	QuotadDataDiskWriteCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_write_count",
 	}, []string{"node", "name"})
 
-	dataDiskReadBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_read_bytes",
+	QuotadDataDiskReadBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_read_bytes",
 	}, []string{"node", "name"})
 
-	dataDiskWriteBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_write_bytes",
+	QuotadDataDiskWriteBytes = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_write_bytes",
 	}, []string{"node", "name"})
 
-	dataDiskReadTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_read_time",
+	QuotadDataDiskReadTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_read_time",
 	}, []string{"node", "name"})
 
-	dataDiskWriteTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "data_disk_write_time",
+	QuotadDataDiskWriteTime = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "quotad_data_disk_write_time",
 	}, []string{"node", "name"})
 
 	//metrics for error
-	persistentVolumeCreateFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "persistentvolume_create_failed_total",
+	QuotadPersistentVolumeCreateFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "quotad_persistentvolume_create_failed_total",
 	}, []string{"node"})
 
-	persistentVolumeCleanFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "persistentvolume_clean_failed_total",
+	QuotadPersistentVolumeCleanFailedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "quotad_persistentvolume_clean_failed_total",
 	}, []string{"node"})
 
-	persistentVolumeQuotaNotMatchTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "persistentvolume_quota_not_match_total",
-	}, []string{"node", "detail"})
+	QuotadPersistentVolumeQuotaNotMatchTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "quotad_persistentvolume_quota_not_match_total",
+	}, []string{"node", "id", "detail"})
 ```
 
 
